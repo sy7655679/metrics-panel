@@ -1,0 +1,50 @@
+version: '3.5'
+networks:
+  backend:
+    driver: ${NETWORKS_DRIVER}
+
+services:
+  prometheus:
+    build:
+      context: ./prometheus
+    environment:
+      - TZ=${TZ}
+    privileged: true
+    volumes:
+      - ${DATA_PATH_HOST}/prometheus/prometheus:/etc/prometheus
+      - ${DATA_PATH_HOST}/prometheus/prometheus_data:/prometheus
+      - ./nodes:/etc/prometheus/nodes # 需要观察的服务节点列表
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml # 将prometheus配置文件挂载到容器里
+      - ./prometheus/alert.yml:/etc/prometheus/conf/alert.yml  # 将prometheus配置文件挂载到容器里
+    ports:
+      - "${PROMETHEUS_PORT}:9090" # 设置容器9090端口映射指定宿主机端口，用于宿主机访问可视化web
+    networks:
+      - backend
+    restart: always
+
+  alertmanager:
+    build:
+      context: ./alertmanager
+    container_name: alertmanager
+    ports:
+      - "${ALERTMANAGER_PORT}:9093"
+    volumes:
+      - "./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml"
+      - ${DATA_PATH_HOST}/prometheus/data/alertmanager:/alertmanager/data
+      - "./alertmanager/template:/etc/alertmanager/template"
+    networks:
+      - backend
+    restart: always
+
+  grafana:
+    build:
+      context: ./grafana
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_PATH_HOST}/grafana/grafana_data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT}:3000" # 设置容器3000端口映射指定宿主机端口，用于宿主机访问可视化web
+    networks:
+      - backend
+    restart: always

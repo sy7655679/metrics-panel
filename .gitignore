@@ -1,0 +1,9 @@
+.idea
+*/.idea
+*/.DS_Store
+.DS_Store
+*_build_*
+/*.log
+logs
+runtime
+metrics_running

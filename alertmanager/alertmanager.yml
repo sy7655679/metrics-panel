@@ -1,0 +1,52 @@
+global:
+  ## 在没有报警的情况下声明为已解决的时间
+  resolve_timeout: 5m
+  ## 邮箱SMTP服务器地址和端口(必需)；
+  smtp_smarthost: 'smtp.163.com:25'
+  ## 发件人邮箱名称
+  smtp_from: 'geek@163.com'
+  ## 发件人邮箱账户
+  smtp_auth_username: 'geek@163.com'
+  ## 发件人邮箱密码 (这里指的是邮箱授权码，不是登录密码)
+  smtp_auth_password: '123456'
+  ## 是否使用TLS加密,需要注意和端口对应
+  smtp_require_tls: false
+route:
+  ## 配置用于分组的标签
+  group_by: ['alertname', 'cluster']
+  ## 配置同一组告警等待时间。
+  ## 用于配置接收到某组中的告警信息后，并不会立即发出告警信息，
+  ## 而是等待指定时间，如果有相同组的告警信息，则一起发送告警
+  group_wait: 30s
+  ## 两组告警的间隔时间
+  group_interval: 10m
+  ## 重复告警的间隔时间，减少相同邮件的发送频率。
+  ## 如果一个报警信息已经发送成功了，等待 repeat_interval 时间来重新发送他们
+  ## 但是如果告警在 resolve_timeout 时间内没有重复发送，表示问题已经解决，则
+  ## 到 repeat_interval 时间后就不会重新发送
+  repeat_interval: 30m
+  ## 配置默认接收者，如果一个报警没有被一个 route 匹配，则发送给默认的接收器
+  receiver: wechat
+templates:
+  - '/etc/alertmanager/template/*.tpl'
+receivers: #定义接收者
+  - name: 'email'
+    email_configs:
+      - to: 'vinth@vip.qq.com'
+        send_resolved: true
+  - name: 'wechat' #企业微信接受者
+    wechat_configs:
+      - corp_id: '{替换成自己的corp_id}'
+        message: '{{ template "wechat.default.message" . }}'
+        # to_user: '@all'       #定义发送给公司组织架构下所有人
+        to_user: ''       #定义发送给公司的指定人，多人使用|连接示例：1221|1232121231
+        # to_party: 2            #定义发送给组织架构下组ID为2的所有用户
+        agent_id: '{微信应用机器人的agent_id}'     #定义微信应用机器人的agent_id
+        api_secret: '{企业微信应用的secret}'   #定义
+        send_resolved: true #报警恢复通知
+inhibit_rules: #抑制的规则
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
